@@ -22,7 +22,7 @@ pipeline {
         stage('Lancer le conteneur') {
             steps {
                 sh '''
-                    docker rm -f $CONTAINER_NAME || true
+                    //docker rm -f $CONTAINER_NAME || true
                     docker run -d -p 8081:80 --name $CONTAINER_NAME $IMAGE_NAME
                 '''
             }
