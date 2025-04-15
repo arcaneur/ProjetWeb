@@ -37,8 +37,8 @@ pipeline {
             echo "❌ Échec du pipeline"
         }
         cleanup {
-            echo "🧹 Nettoyage..."
-            sh 'docker rm -f $CONTAINER_NAME || true'
+            //echo "🧹 Nettoyage..."
+            //sh 'docker rm -f $CONTAINER_NAME || true'
         }
     }
 }
