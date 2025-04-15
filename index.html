@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Location de Salle des Fêtes</title>
+    <link rel="stylesheet" href="style.css"> <!-- Si vous avez un fichier CSS -->
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        header {
+            background-color: #333;
+            color: white;
+            padding: 10px 0;
+            text-align: center;
+        }
+        section {
+            padding: 20px;
+        }
+        .salle-info {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+        }
+        .salle-info div {
+            width: 45%;
+        }
+        .formulaire {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .formulaire input, .formulaire textarea, .formulaire button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .formulaire button {
+            background-color: #333;
+            color: white;
+            cursor: pointer;
+        }
+        footer {
+            background-color: #333;
+            color: white;
+            text-align: center;
+            padding: 10px 0;
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Location de Salle des Fêtes</h1>
+</header>
+
+<section>
+    <h2>Présentation de la Salle</h2>
+    <p>Notre salle des fêtes est un espace moderne et spacieux, idéal pour vos événements tels que mariages, anniversaires, séminaires, et autres occasions spéciales. Elle est équipée de tout le nécessaire pour assurer le succès de votre événement.</p>
+
+    <div class="salle-info">
+        <div>
+            <h3>Caractéristiques</h3>
+            <ul>
+                <li>Capacité : 150 personnes</li>
+                <li>Parking gratuit sur place</li>
+                <li>Accès handicapé</li>
+                <li>Équipement audiovisuel disponible</li>
+                <li>Service traiteur sur demande</li>
+            </ul>
+        </div>
+        <div>
+            <h3>Tarifs</h3>
+            <p>Le tarif de location est de 500€ par jour. Des options supplémentaires comme la décoration ou l'équipement audiovisuel sont disponibles à la demande.</p>
+        </div>
+    </div>
+
+    <h2>Réservez votre Salle</h2>
+    <p>Pour réserver la salle des fêtes ou obtenir plus d'informations, veuillez remplir le formulaire ci-dessous.</p>
+
+    <div class="formulaire">
+        <h3>Formulaire de Contact</h3>
+        <form action="submit_form.php" method="POST">
+            <label for="nom">Nom</label>
+            <input type="text" id="nom" name="nom" required>
+
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" required>
+
+            <label for="date">Date de l'événement</label>
+            <input type="date" id="date" name="date" required>
+
+            <label for="message">Message</label>
+            <textarea id="message" name="message" rows="4" required></textarea>
+
+            <button type="submit">Envoyer la demande</button>
+        </form>
+    </div>
+</section>
+<div> modif test</div>
+
+<footer>
+    <p>Contactez-nous au 01 23 45 67 89 ou par email à contact@salledesfetes.fr</p>
+    <p>&copy; 2024 Salle des Fêtes. Tous droits réservés.</p>
+</footer>
+
+</body>
+</html>
