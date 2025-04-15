@@ -1,0 +1,79 @@
+pipeline {
+    agent any
+
+    environment {
+        IMAGE_NAME = 'mon-site-fetes'
+        CONTAINER_NAME = 'test-site-fetes'
+        DOCKER_HUB_USER = 'arcaneur'
+        DOCKER_HUB_REPO = 'arcaneur/projetweb'
+    }
+
+    stages {
+        stage('Cloner le dépôt') {
+            steps {
+                git url: 'https://github.com/arcaneur/ProjetWeb.git', branch: 'main'
+            }
+        }
+
+        stage('Analyse SonarQube') {
+            environment {
+                SONARQUBE_SCANNER_HOME = tool 'SonarQubeScanner' // Assure-toi que l'outil est bien configuré dans Jenkins
+            }
+            steps {
+                withSonarQubeEnv('SonarQube') { // Assure-toi que le nom correspond à ta config Jenkins
+                    sh "${SONARQUBE_SCANNER_HOME}/bin/sonar-scanner -Dsonar.projectKey=mon-site-fetes -Dsonar.sources=."
+                }
+            }
+        }
+
+        stage('Construire l\'image Docker') {
+            steps {
+                sh 'docker build -t $IMAGE_NAME .'
+            }
+        }
+
+        stage('Push sur Docker Hub') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh '''
+                        echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                        docker tag $IMAGE_NAME $DOCKER_USER/$DOCKER_HUB_REPO:latest
+                        docker push $DOCKER_USER/$DOCKER_HUB_REPO:latest
+                    '''
+                }
+            }
+        }
+
+        stage('Déployer sur Kubernetes') {
+            steps {
+                sh '''
+                    kubectl delete deployment mon-site-fetes-deployment --ignore-not-found=true
+                    kubectl apply -f k8s/deployment.yaml
+                    kubectl apply -f k8s/service.yaml
+                '''
+            }
+        }
+
+        stage('Lancer le conteneur (local)') {
+            steps {
+                sh '''
+                    docker rm -f $CONTAINER_NAME || true
+                    docker run -d -p 8081:80 --name $CONTAINER_NAME $IMAGE_NAME
+                '''
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "✔️ Le site est lancé sur http://localhost:8080"
+        }
+        failure {
+            echo "❌ Échec du pipeline"
+        }
+        cleanup {
+            echo "🧹 Nettoyage..."
+            //sh 'docker rm -f $CONTAINER_NAME || true'
+        }
+    }
+}
