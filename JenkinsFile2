@@ -14,7 +14,11 @@ pipeline {
                 git url: 'https://github.com/arcaneur/ProjetWeb.git', branch: 'main'
             }
         }
-
+        stage('Debug Java') {
+            steps {
+                sh 'java -version'
+            }
+        }
         stage('Analyse SonarQube') {
             environment {
                 SONARQUBE_SCANNER_HOME = tool 'SonarQubeScanner' // Assure-toi que l'outil est bien configuré dans Jenkins
