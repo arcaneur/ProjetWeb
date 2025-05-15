@@ -1,0 +1,65 @@
+pipeline {
+    agent any
+
+    environment {
+        IMAGE_NAME = 'mon-site-fetes'
+    }
+
+    stages {
+        stage('Cloner le dépôt') {
+            steps {
+                git url: 'https://github.com/arcaneur/ProjetWeb.git', branch: 'main'
+            }
+        }
+
+        stage('Analyse SonarQube') {
+            environment {
+                SONARQUBE_SCANNER_HOME = tool 'SonarQubeScanner'
+            }
+            steps {
+                withSonarQubeEnv('SonarQube') {
+                    sh "${SONARQUBE_SCANNER_HOME}/bin/sonar-scanner -Dsonar.projectKey=mon-site-fetes -Dsonar.sources=."
+                }
+            }
+        }
+
+        stage('Construire l\'image Docker') {
+            steps {
+                sh 'docker build -t $IMAGE_NAME .'
+            }
+        }
+
+        // Les étapes suivantes sont désactivées pour alléger
+        /*
+        stage('Push sur Docker Hub') {
+            steps {
+                echo 'Étape Docker Hub désactivée pour tests'
+            }
+        }
+
+        stage('Déployer sur Kubernetes') {
+            steps {
+                echo 'Déploiement Kubernetes désactivé pour tests'
+            }
+        }
+
+        stage('Lancer le conteneur (local)') {
+            steps {
+                echo 'Exécution locale du conteneur désactivée pour tests'
+            }
+        }
+        */
+    }
+
+    post {
+        success {
+            echo "✔️ Build terminé avec succès"
+        }
+        failure {
+            echo "❌ Échec du pipeline"
+        }
+        cleanup {
+            echo "🧹 Nettoyage terminé"
+        }
+    }
+}
