@@ -9,22 +9,12 @@ pipeline {
     }
 
     stages {
-        stage('Cloner le dépôt') {
-            steps {
-                git url: 'https://github.com/arcaneur/ProjetWeb.git', branch: 'main'
-            }
-        }
-        stage('Debug Java') {
-            steps {
-                sh 'java -version'
-            }
-        }
         stage('Analyse SonarQube') {
             environment {
-                SONARQUBE_SCANNER_HOME = tool 'SonarQubeScanner' // Assure-toi que l'outil est bien configuré dans Jenkins
+                SONARQUBE_SCANNER_HOME = tool 'SonarQubeScanner'
             }
             steps {
-                withSonarQubeEnv('SonarQube') { // Assure-toi que le nom correspond à ta config Jenkins
+                withSonarQubeEnv('SonarQube') {
                     sh "${SONARQUBE_SCANNER_HOME}/bin/sonar-scanner -Dsonar.projectKey=mon-site-fetes -Dsonar.sources=."
                 }
             }
@@ -52,8 +42,8 @@ pipeline {
             steps {
                 sh '''
                     kubectl delete deployment mon-site-fetes-deployment --ignore-not-found=true
-                    kubectl apply -f home/frantz/projet_html/deployment.yaml
-                    kubectl apply -f home/frantz/projet_html/service.yaml
+                    kubectl apply -f ./deployment.yaml
+                    kubectl apply -f ./service.yaml
                 '''
             }
         }
@@ -70,14 +60,13 @@ pipeline {
 
     post {
         success {
-            echo "✔️ Le site est lancé sur http://localhost:8080"
+            echo "✔️ Le site est lancé sur http://localhost:8081"
         }
         failure {
             echo "❌ Échec du pipeline"
         }
         cleanup {
             echo "🧹 Nettoyage..."
-            //sh 'docker rm -f $CONTAINER_NAME || true'
         }
     }
 }
