@@ -6,16 +6,49 @@ pipeline {
         CONTAINER_NAME = 'test-site-fetes'
         DOCKER_HUB_USER = 'arcaneur'
         DOCKER_HUB_REPO = 'arcaneur/projetweb'
+        KUBECONFIG = '/home/jenkins/.kube/config' // ✅ Chemin user-friendly compatible Jenkins
     }
 
     stages {
+        stage('Cloner le dépôt') {
+            steps {
+                git url: 'https://github.com/arcaneur/ProjetWeb.git', branch: 'main'
+            }
+        }
+
+        stage('Installation des dépendances Python') {
+            steps {
+                sh '''
+                    python3 -m venv venv
+                    source venv/bin/activate
+                    pip install -r requirements.txt
+                    pip install coverage
+                '''
+            }
+        }
+
+        stage('Tests unitaires avec couverture') {
+            steps {
+                sh '''
+                    source venv/bin/activate
+                    coverage run manage.py test
+                    coverage xml
+                '''
+            }
+        }
+
         stage('Analyse SonarQube') {
             environment {
                 SONARQUBE_SCANNER_HOME = tool 'SonarQubeScanner'
             }
             steps {
                 withSonarQubeEnv('SonarQube') {
-                    sh "${SONARQUBE_SCANNER_HOME}/bin/sonar-scanner -Dsonar.projectKey=mon-site-fetes -Dsonar.sources=."
+                    sh '''
+                        ${SONARQUBE_SCANNER_HOME}/bin/sonar-scanner \
+                        -Dsonar.projectKey=mon-site-fetes \
+                        -Dsonar.sources=. \
+                        -Dsonar.python.coverage.reportPaths=coverage.xml
+                    '''
                 }
             }
         }
@@ -31,16 +64,17 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     sh '''
                         echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
-                        docker tag mon-site-fetes arcaneur/projetweb:latest
-                        docker push arcaneur/projetweb:latest                    
+                        docker tag $IMAGE_NAME $DOCKER_HUB_REPO:latest
+                        docker push $DOCKER_HUB_REPO:latest                    
                     '''
                 }
             }
         }
 
-        stage('Déployer sur Kubernetes') {
+        stage('Déployer sur Kubernetes (K3s)') {
             steps {
                 sh '''
+                    export KUBECONFIG=$KUBECONFIG
                     kubectl delete deployment mon-site-fetes-deployment --ignore-not-found=true
                     kubectl apply -f ./deployment.yaml
                     kubectl apply -f ./service.yaml
@@ -48,6 +82,7 @@ pipeline {
             }
         }
 
+        /*
         stage('Lancer le conteneur (local)') {
             steps {
                 sh '''
@@ -56,17 +91,18 @@ pipeline {
                 '''
             }
         }
+        */
     }
 
     post {
         success {
-            echo "✔️ Le site est lancé sur http://localhost:8081"
+            echo "✔️ Le site est déployé avec succès via K3s."
         }
         failure {
             echo "❌ Échec du pipeline"
         }
         cleanup {
-            echo "🧹 Nettoyage..."
+            echo "🧹 Nettoyage terminé."
         }
     }
 }
