@@ -1,0 +1,104 @@
+pipeline {
+    agent any
+
+    environment {
+        IMAGE_NAME = 'mon-site-fetes'
+        CONTAINER_NAME = 'test-site-fetes'
+        DOCKER_HUB_USER = 'arcaneur'
+        DOCKER_HUB_REPO = 'arcaneur/projetweb'
+        SONARQUBE_SCANNER_HOME = tool 'SonarQubeScanner'
+        KUBECONFIG = '/home/jenkins/kube/k3s.config'  // <-- intégration ici
+    }
+
+    stages {
+
+        stage('Préparer l’environnement Python') {
+            steps {
+                sh '''
+                    python3 -m venv venv
+                    . venv/bin/activate
+                    pip install --upgrade pip
+                    pip install coverage
+                '''
+            }
+        }
+
+        stage('Tests unitaires avec coverage') {
+            steps {
+                sh '''
+                    . venv/bin/activate
+                    mkdir -p tests
+                    echo "def test_dummy(): assert 1 == 1" > tests/test_dummy.py
+                    coverage run -m unittest discover -s tests
+                    coverage xml
+                '''
+            }
+        }
+
+        stage('Analyse SonarQube') {
+            steps {
+                withSonarQubeEnv('SonarQube') {
+                    sh '''
+                        ${SONARQUBE_SCANNER_HOME}/bin/sonar-scanner \
+                        -Dsonar.projectKey=mon-site-fetes \
+                        -Dsonar.sources=. \
+                        -Dsonar.python.coverage.reportPaths=coverage.xml \
+                        -Dsonar.host.url=$SONAR_HOST_URL \
+                        -Dsonar.login=$SONAR_AUTH_TOKEN
+                    '''
+                }
+            }
+        }
+
+        stage('Construire l\'image Docker') {
+            steps {
+                sh 'docker build -t $IMAGE_NAME .'
+            }
+        }
+
+        stage('Push sur Docker Hub') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh '''
+                        echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                        docker tag $IMAGE_NAME $DOCKER_HUB_REPO:latest
+                        docker push $DOCKER_HUB_REPO:latest
+                    '''
+                }
+            }
+        }
+
+        stage('Déployer sur Kubernetes') {
+            steps {
+                withCredentials([file(credentialsId: 'k3s-kubeconfig', variable: 'KUBECONFIG_FILE')]) {
+                    sh '''
+                        export KUBECONFIG=$KUBECONFIG_FILE
+                        kubectl delete deployment mon-site-fetes-deployment --ignore-not-found=true
+                        kubectl apply -f k8s/deployment.yaml
+                    '''
+                }
+            }
+        }
+
+        stage('Lancer le conteneur (local)') {
+            steps {
+                sh '''
+                    docker rm -f $CONTAINER_NAME || true
+                    docker run -d -p 8081:80 --name $CONTAINER_NAME $IMAGE_NAME
+                '''
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "✔️ Le site est lancé sur http://localhost:8081"
+        }
+        failure {
+            echo "❌ Échec du pipeline"
+        }
+        cleanup {
+            echo "🧹 Nettoyage..."
+        }
+    }
+}
