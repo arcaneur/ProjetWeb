@@ -67,7 +67,7 @@ pipeline {
 
         stage('Déployer sur Kubernetes') {
             steps {
-                withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG_FILE')]) {
+                withCredentials([file(credentialsId: 'k3s-kubeconfig', variable: 'KUBECONFIG_FILE')]) {
                     sh '''
                         # Copier et modifier le kubeconfig
                         cp $KUBECONFIG_FILE ./kubeconfig-temp
