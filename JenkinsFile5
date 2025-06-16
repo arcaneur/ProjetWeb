@@ -69,9 +69,7 @@ pipeline {
             steps {
                 withCredentials([file(credentialsId: 'k3s-kubeconfig', variable: 'KUBECONFIG_FILE')]) {
                     sh '''
-                        cp "$KUBECONFIG_FILE" kubeconfig-temp.yaml
-                        export KUBECONFIG=kubeconfig-temp.yaml
-        
+                        export KUBECONFIG=$KUBECONFIG_FILE 
                         kubectl delete deployment mon-site-fetes-deployment --ignore-not-found=true
                         kubectl apply -f k8s-deployment.yaml
                     '''
