@@ -69,13 +69,23 @@ pipeline {
             steps {
                 withCredentials([file(credentialsId: 'k3s-kubeconfig', variable: 'KUBECONFIG_FILE')]) {
                     sh '''
-                        export KUBECONFIG=$KUBECONFIG_FILE 
+                        export KUBECONFIG=$KUBECONFIG_FILE
+        
+                        # Supprime l'ancien déploiement s'il existe
                         kubectl delete deployment mon-site-fetes-deployment --ignore-not-found=true
-                        kubectl apply -f k3s-deployment.yaml
+        
+                        # Crée un nouveau déploiement
+                        kubectl create deployment mon-site-fetes-deployment \
+                            --image=arcaneur/projetweb:latest
+        
+                        # Expose le service si non existant
+                        kubectl expose deployment mon-site-fetes-deployment \
+                            --port=80 --target-port=80 --type=NodePort \
+                            --name=mon-site-fetes-service || true
                     '''
                 }
             }
-        }
+        } 
 
         stage('Lancer le conteneur (local)') {
             steps {
